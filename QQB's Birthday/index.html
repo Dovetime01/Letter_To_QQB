@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To My lovely QQB</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Noto+Serif+SC:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ================= 样式区域 (不懂代码可以不改这里) ================= */
+        :root {
+            --envelope-color: #f3e5d8;
+            --envelope-shadow: rgba(0,0,0,0.2);
+            --seal-color: #c0392b;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Noto Serif SC', serif;
+            background-color: #1a1a1a;
+            overflow: hidden;
+            perspective: 1200px;
+        }
+
+        .bg-slideshow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        .bg-slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 2s ease-in-out;
+        }
+        
+        .bg-slide.active { opacity: 0.4; }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: -1;
+        }
+
+        .scene {
+            position: relative; width: 600px; height: 400px;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer;
+        }
+
+        @media (max-width: 650px) {
+            .scene { transform: scale(0.6); }
+            .scene.flipped { transform: scale(0.6) rotateY(180deg); }
+        }
+
+        .scene.flipped { transform: rotateY(180deg); }
+        .scene.reading { transform: rotateY(180deg) translateY(100px); cursor: default; }
+
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 5px;
+            background-color: var(--envelope-color);
+            background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .front {
+            z-index: 2; transform: rotateY(0deg);
+            border: 2px solid #e0d0c0; padding: 30px;
+            position: relative; overflow: hidden;
+        }
+
+        .air-mail-border {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border: 10px solid transparent;
+            background: linear-gradient(135deg, #c0392b 25%, transparent 25%, transparent 50%, #2980b9 50%, #2980b9 75%, transparent 75%, transparent);
+            background-size: 40px 40px; opacity: 0.7; pointer-events: none;
+        }
+        
+        .front-content {
+            position: relative; z-index: 2; height: 100%;
+            background: var(--envelope-color); margin: 10px; padding: 20px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* 邮票样式调整，适应自定义图片 */
+        .stamp {
+            position: absolute; top: 20px; right: 20px;
+            width: 80px; height: 95px;
+            background: #fff; border: 1px solid #ddd; padding: 3px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            overflow: hidden; /* 防止图片溢出 */
+        }
+        .stamp img {
+            width: 100%; height: 100%;
+            object-fit: cover; /* 保证图片填满且不变形 */
+        }
+
+        .postmark {
+            position: absolute; top: 25px; right: 85px;
+            width: 100px; height: 100px;
+            border: 2px solid rgba(50, 50, 50, 0.6); border-radius: 50%;
+            color: rgba(50, 50, 50, 0.6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold;
+            transform: rotate(-15deg); opacity: 0.8; pointer-events: none;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M0,50 Q25,25 50,50 T100,50" stroke="rgba(50,50,50,0.3)" fill="none"/><path d="M0,60 Q25,35 50,60 T100,60" stroke="rgba(50,50,50,0.3)" fill="none"/></svg>');
+        }
+
+        .address-from {
+            position: absolute; top: 20px; left: 20px;
+            font-family: 'Noto Serif SC', serif; font-size: 12px;
+            color: #7f8c8d; line-height: 1.5; text-align: left;
+        }
+        
+        .address-to {
+            position: absolute; bottom: 40px; right: 150px; width: 60%;
+            font-family: 'Dancing Script', cursive; font-size: 22px;
+            color: #2c3e50; line-height: 1.4; text-align: left; transform: rotate(-1deg);
+        }
+
+        .label-to {
+            font-family: 'Courier New', monospace; font-size: 12px;
+            color: #95a5a6; letter-spacing: 2px; margin-bottom: 5px; display: block;
+        }
+
+        .back {
+            transform: rotateY(180deg); z-index: 1; background: #e6d0bf;
+        }
+
+        .flap-left {
+            position: absolute; top: 0; left: 0; width: 0; height: 0;
+            border-top: 200px solid transparent; border-bottom: 200px solid #e0d0c0;
+            border-left: 300px solid #e0d0c0; z-index: 3;
+        }
+        .flap-right {
+            position: absolute; top: 0; right: 0; width: 0; height: 0;
+            border-top: 200px solid transparent; border-bottom: 200px solid #dcbfa8;
+            border-right: 300px solid #dcbfa8; z-index: 3;
+        }
+        .flap-bottom {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0;
+            border-left: 300px solid transparent; border-right: 300px solid transparent;
+            border-bottom: 210px solid #d6b89f; z-index: 4;
+        }
+        .flap-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 0;
+            border-left: 300px solid transparent; border-right: 300px solid transparent;
+            border-top: 220px solid #c8a88d; z-index: 6;
+            transform-origin: top; transition: transform 0.8s ease, z-index 0.8s;
+        }
+
+        .scene.open .flap-top {
+            transform: rotateX(180deg); z-index: 2;
+        }
+
+        .seal {
+            position: absolute; top: 190px; left: 50%;
+            transform: translateX(-50%); width: 55px; height: 55px;
+            background: radial-gradient(circle at 30% 30%, #e74c3c, #922b21);
+            border-radius: 50%; z-index: 7;
+            box-shadow: 2px 4px 6px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            color: #722018; font-weight: bold; font-family: 'Dancing Script', cursive;
+            font-size: 24px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1);
+            transition: transform 0.2s, opacity 0.5s;
+        }
+        .seal:hover { transform: translateX(-50%) scale(1.1); }
+        .scene.open .seal { opacity: 0; pointer-events: none; }
+
+        .letter-content {
+            position: absolute; bottom: 0; left: 5%; width: 90%; height: 90%;
+            background: #fffaf0; z-index: 5;
+            transition: transform 1s 0.5s ease-in-out, height 1s 0.5s;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1); padding: 40px;
+            overflow: hidden; border-radius: 5px;
+            background-image: linear-gradient(#e6e6e6 1px, transparent 1px);
+            background-size: 100% 30px;
+        }
+
+        .scene.open .letter-content {
+            transform: translateY(-50%) scale(1.1); height: 140%;
+            z-index: 20; overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+            background-image: none; background-color: #fffbf2;
+        }
+
+        .letter-text {
+            font-family: 'Noto Serif SC', serif; color: #2c3e50;
+            line-height: 2; font-size: 16px; opacity: 0; transition: opacity 1s 1.5s;
+        }
+        .scene.open .letter-text { opacity: 1; }
+
+        .letter-header {
+            font-family: 'Dancing Script', cursive; font-size: 24px;
+            margin-bottom: 20px; color: #c0392b;
+        }
+        
+        .letter-footer {
+            margin-top: 40px; text-align: right;
+            font-family: 'Dancing Script', cursive; font-size: 20px; color: #7f8c8d;
+        }
+
+        .timer-tip {
+            position: absolute; bottom: -50px; left: 0; width: 100%;
+            text-align: center; color: rgba(255,255,255,0.7);
+            font-size: 14px; pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); transform: rotateY(180deg);
+        }
+        
+        .flip-hint {
+            position: absolute; bottom: 10px; width: 100%;
+            text-align: center; font-size: 12px; color: #999;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% {opacity:0.5;} 50% {opacity:1;} 100% {opacity:0.5;} }
+        @keyframes shake {
+            0% { transform: rotateY(180deg) translateX(0); }
+            25% { transform: rotateY(180deg) translateX(-10px); }
+            50% { transform: rotateY(180deg) translateX(10px); }
+            75% { transform: rotateY(180deg) translateX(-10px); }
+            100% { transform: rotateY(180deg) translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-slideshow" id="bgSlideshow"></div>
+    <div class="overlay"></div>
+
+    <div class="scene" id="scene">
+        <!-- 正面 -->
+        <div class="card-face front">
+            <div class="air-mail-border"></div>
+            <div class="front-content">
+                <!-- 邮票区域 -->
+                <div class="stamp">
+                    <img id="stamp-img" src="" alt="Stamp">
+                </div>
+                <div class="postmark">NINGBO<br>2024.11.22</div>
+
+                <!-- 寄件人 -->
+                <div class="address-from">
+                    <span style="font-weight:bold; color:#000;">小薯包</span><br>
+                    Building 15<br>
+                    University of Nottingham Ningbo China<br>
+                    Yinzhou, Ningbo, Zhejiang<br>
+                    P.R. China, 315000
+                </div>
+
+                <!-- 收件人 -->
+                <div class="address-to">
+                    <span class="label-to">TO:</span>
+                    <span style="font-size: 28px; font-weight: bold; color: #000;">Keke Bao</span><br>
+                    FLAT 66, Mason Halls<br>
+                    Edgbaston Park Road<br>
+                    Edgbaston, Birmingham<br>
+                    United Kingdom, B15 2RQ
+                </div>
+                
+                <div class="flip-hint">点击信封翻转 (Click to flip)</div>
+            </div>
+        </div>
+
+        <!-- 背面 -->
+        <div class="card-face back">
+            <div class="letter-content">
+                <div class="letter-text">
+                    <div class="letter-header">Dearest Keke,</div>
+                    
+                    <!-- 💌 TODO: 4. 在这里修改信件正文 💌 -->
+                    <p>
+                        这里什么也没有喔～
+                    </p>
+
+                    <div class="letter-footer">
+                        Love,<br>
+                        小薯包<br>
+                        2024.11.27
+                    </div>
+                </div>
+            </div>
+
+            <div class="flap-left"></div>
+            <div class="flap-right"></div>
+            <div class="flap-bottom"></div>
+            <div class="flap-top" id="flapTop"></div>
+            <div class="seal" id="sealBtn">Love</div>
+            <div class="timer-tip" id="timerText">等待送达...</div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!--          配置区域 (请在这里修改图片和时间)        -->
+    <!-- ============================================== -->
+    <script>
+        // ✨ TODO: 1. 设置背景图片 (支持多张轮播)
+        // 替换下面的链接。如果是本地图片，把图片放在和 html 同一个文件夹，然后写文件名，例如 "bg1.jpg"
+        const bgImages = [
+            "image/IMG_2935.jpeg", 
+            "image/IMG_5606.jpeg",
+            "image/IMG_1578.jpeg",
+            "image/1.jpg",
+            "image/2.jpg",
+            "image/3.jpg",
+            "image/4.jpeg",
+            "image/5.pic.jpg",
+            "image/6.pic.jpg",
+            "image/7.pic.jpg",
+            "image/8.pic.jpg",
+            "image/9.pic.jpg",
+            "image/10.pic.jpg",
+            "image/11.pic.jpg",
+            "image/12x.pic.jpg",
+            "image/12.pic.jpg"
+
+            
+        ];
+
+        // ✨ TODO: 2. 设置邮票图片
+        // 建议找一张竖版的图片，或者你们的合照
+        const stampImageURL = "image/IMG_2589.jpeg"; 
+
+        // ✨ TODO: 3. 设置开信时间 (北京时间)
+        // 格式：YYYY-MM-DDTHH:mm:ss+08:00
+        const targetDateStr = "2025-11-27T00:00:00+08:00"; 
+        
+        // ✨ 测试模式 (发送前记得改成 false)
+        const TEST_MODE = false;
+
+        // ================= 代码逻辑 (请勿修改下方代码) =================
+        const scene = document.getElementById('scene');
+        const sealBtn = document.getElementById('sealBtn');
+        const timerText = document.getElementById('timerText');
+        const bgSlideshow = document.getElementById('bgSlideshow');
+
+        // 应用邮票图片
+        document.getElementById('stamp-img').src = stampImageURL;
+
+        let isFlipped = false;
+        let isOpened = false;
+
+        function initBackground() {
+            bgImages.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-slide';
+                div.style.backgroundImage = `url('${url}')`;
+                if(index === 0) div.classList.add('active');
+                bgSlideshow.appendChild(div);
+            });
+            let currentSlide = 0;
+            if (bgImages.length > 1) {
+                setInterval(() => {
+                    const slides = document.querySelectorAll('.bg-slide');
+                    slides[currentSlide].classList.remove('active');
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    slides[currentSlide].classList.add('active');
+                }, 5000);
+            }
+        }
+        initBackground();
+
+        scene.addEventListener('click', (e) => {
+            if (isOpened || e.target.id === 'sealBtn') return;
+            isFlipped = !isFlipped;
+            scene.classList.toggle('flipped', isFlipped);
+        });
+
+        function checkTime() {
+            const now = new Date();
+            const target = new Date(targetDateStr);
+            const diff = target - now;
+            if (TEST_MODE || diff <= 0) {
+                return { locked: false, text: "点击火漆印开启 (Open)" };
+            } else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                return { locked: true, text: `距离送达还有: ${days}天 ${hours}时 ${minutes}分 ${seconds}秒` };
+            }
+        }
+
+        setInterval(() => {
+            if (!isOpened) {
+                const status = checkTime();
+                timerText.innerText = status.text;
+                sealBtn.style.cursor = status.locked ? 'not-allowed' : 'pointer';
+            }
+        }, 1000);
+
+        sealBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const status = checkTime();
+            if (status.locked) {
+                scene.style.animation = "shake 0.5s";
+                setTimeout(() => scene.style.animation = "", 500);
+                alert("小薯包的信件还在运输中哦～");
+                return;
+            }
+            isOpened = true;
+            scene.classList.add('open');
+            timerText.style.display = 'none';
+            setTimeout(() => scene.classList.add('reading'), 800);
+        });
+    </script>
+</body>
+</html>
